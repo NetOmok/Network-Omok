@@ -80,11 +80,19 @@ public class OmokServer implements Runnable{
 							// 새 방에 있는 다른 사용자에게 사용자의 입장을 알린다.
 							Man.sendToOthers(this, "[ENTER]"+userName);
 						}
-						else writer.println("[FULL]");        // 사용자에 방이 찼음을 알린다.
+						else {							
+							roomNumber=roomNum;
+							writer.println("[FULL]"+roomNumber);
+							writer.println(Man.getNamesInRoom(roomNumber));
+							Man.sendToOthers(this, "[ENTER]"+userName);
+							
+						}
 					}
 					// "[STONE]" 메시지는 상대편에게 전송한다.
 					else if(roomNumber>=1 && msg.startsWith("[STONE]"))
+						//Man.sendToOthers(this, msg);
 						Man.sendToOthers(this, msg);
+	
 					// 대화 메시지를 방에 전송한다.
 					else if(msg.startsWith("[MSG]"))
 						Man.sendToRoom(roomNumber, "["+userName+"]: "+msg.substring(5));
@@ -177,6 +185,14 @@ public class OmokServer implements Runnable{
 			return false;
 		}
 
+		
+//		//////////////// 관전자 제외 /////////////////
+//		void sendToRoomPlayer(int roomNum, String msg){
+//			for(int i=0;i<2;i++)
+//				if(roomNum==getRoomNumber(i))
+//					sendTo(i, msg);
+//		}
+		
 		// roomNum 방에 msg를 전송한다.
 		void sendToRoom(int roomNum, String msg){
 			for(int i=0;i<size();i++)
@@ -190,6 +206,12 @@ public class OmokServer implements Runnable{
 				if(getRoomNumber(i)==ot.getRoomNumber() && getOT(i)!=ot)
 					sendTo(i, msg);
 		}
+//		void sendToPlayer(controller ot, String msg){
+//			for(int i=0;i<2;i++)
+//				if(getRoomNumber(i)==ot.getRoomNumber() && getOT(i)!=ot)
+//					sendTo(i, msg);
+//		}
+
     
 		// 게임을 시작할 준비가 되었는가를 반환한다.
 		// 두 명의 사용자 모두 준비된 상태이면 true를 반환한다.

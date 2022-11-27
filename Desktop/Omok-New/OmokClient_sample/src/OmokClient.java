@@ -34,12 +34,14 @@ import javax.swing.JLabel;
 import java.awt.Font;
 import javax.swing.JButton;
 
+
 class OmokBoard extends Canvas{
   	
 	// 바둑돌의 디자인을 선택할 수 있도록 한다.
 	// 기본 설정은 black1과 white1 이미지이다.
 	String myblack = OmokClient.myblack;
 	String mywhite = OmokClient.mywhite;
+	
 	// true이면 사용자가 돌을 놓을 수 있는 상태를 의미하고,
 	// false이면 사용자가 돌을 놓을 수 없는 상태를 의미한다.
 	private boolean enable=false;
@@ -167,9 +169,6 @@ class OmokBoard extends Canvas{
 		for(int i=1; i<=size + 1;i++){
 			gbuff.drawLine(cell - cell/2, i*cell - cell/2, cell*size + cell/2, i*cell - cell/2);
 			gbuff.drawLine(i*cell - cell/2 , cell - cell/2, i*cell- cell/2 , cell*size + cell/2);
-//			gbuff.drawLine(cell - cell, i*cell - cell, cell*size + cell, i*cell - cell);
-//			gbuff.drawLine(i*cell - cell , cell - cell, i*cell- cell , cell*size + cell);
-			
 			
 			
 		}
@@ -236,7 +235,7 @@ class OmokBoard extends Canvas{
 // 이것이 진짜 클래스이고 OmokBoard를 이용하는 주체가 된다.
 public class OmokClient extends JFrame implements Runnable, ActionListener {
 	
-	public static String myblack = "hs_black.png";
+	public static String myblack = "hs_black2.png";
 	public static String mywhite = "hs_white.png";
 	/*
 	 * 여기서부터 메인 디자인과 관련한 부분
@@ -327,6 +326,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					msgView.setText("");
 					if(Integer.parseInt(roomBox.getText())<1){
 						infoView.setText("방번호가 잘못되었습니다. 1이상");
+						//pInfo.setText("방번호가 잘못되었습니다. 1이상");
+						
 						return;
 					}
 					writer.println("[ROOM]"+Integer.parseInt(roomBox.getText()));
@@ -334,8 +335,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					exitButton.show();
 					makeRoom.hide();					
 					roomBox.hide();
-					ready.show();
-					quit.show();
+//					ready.show();
+//					quit.show();
 					nameBox.hide();
 					readyback.hide();
 					battleground.show();
@@ -426,11 +427,6 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		quit.hide();
 		pInfo.setForeground(new Color(255, 255, 255));
 		
-		// 0.598
-		
-		// 29.9
-		
-		
 		pInfo.setBackground(new Color(51, 51, 255)); //pInfo.setBackground(new Color(50, 205, 50));
 		pInfo.setFont(new Font("맑은 고딕", Font.BOLD, 30));
 		pInfo.setBounds(52, 190, 800, 70); //pInfo.setBounds(55, 250, 1170, 60);
@@ -515,7 +511,9 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		exitButton.setEnabled(false);
 		playersInfo();
 	}
- 
+
+	int auth; // 플레이와 관전자 구별 변수
+
 	public void run(){
 		String msg;                             // 서버로부터의 메시지
 		try{
@@ -524,11 +522,21 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				 * 이건 돌의 좌표와 관련해서 승부 판정을 위해 존재하는 
 				 */
 				if(msg.startsWith("[STONE]")){     // 상대편이 놓은 돌의 좌표
+					if(auth == 1) {
+//						String temp=msg.substring(7);
+//						int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
+//						int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
+//						board.putOpponent(x, y);
+//						board.setEnable(false);        // 사용자가 돌을 놓을 수 있도록 한다.
+						repaint();
+					}
+					else {
 					String temp=msg.substring(7);
 					int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
 					int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
 					board.putOpponent(x, y);     // 상대편의 돌을 그린다.
 					board.setEnable(true);        // 사용자가 돌을 놓을 수 있도록 한다.
+					}
 				}
 				/*여기는 방에 입장하는 것과 나가는 것에 관련한 것
 				 * 
@@ -537,7 +545,10 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					if(!msg.equals("[ROOM]0")){          // 대기실이 아닌 방이면
 						makeRoom.setEnabled(false);
 						exitButton.setEnabled(true);
+						ready.show();
+						quit.show();
 						infoView.setText(msg.substring(6)+"번 방에 입장하셨습니다.");
+						auth = 0;
 					}
 					else infoView.setText("대기실에 입장하셨습니다.");
 					roomNumber=Integer.parseInt(msg.substring(6));     // 방 번호 지정
@@ -546,27 +557,32 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					}
 				}
 				else if(msg.startsWith("[FULL]")){       // 방이 찬 상태이면
-					infoView.setText("당신은 관전자입니다.\n");
-					ready.setEnabled(false);
-					quit.setEnabled(false);
+					ready.hide();
+					quit.hide();
+
+					roomNumber=Integer.parseInt(msg.substring(6));     // 방 번호 지정
+					infoView.setText(msg.substring(6)+"방의 관전자입니다.\n");
+
 					exitButton.setEnabled(true);
+					auth = 1;
+					
 					
 				}
 				else if(msg.startsWith("[PLAYERS]")){      // 방에 있는 사용자 명단
 					nameList(msg.substring(9));
 				}
-				else if(msg.startsWith("[ENTER]")){        // 손님 입장
+				else if(msg.startsWith("[ENTER]")){        // 유저 입장
 					pList.add(msg.substring(7));
 					playersInfo();
 					msgView.append("["+ msg.substring(7)+"]님이 입장하였습니다.\n");
 				}
-				else if(msg.startsWith("[EXIT]")){          // 손님 퇴장
+				else if(msg.startsWith("[EXIT]")){          // 유저 퇴장
 					pList.remove(msg.substring(6));// 리스트에서 제거
 					playersInfo();                        // 인원수를 다시 계산하여 보여준다.
 					msgView.append("["+msg.substring(6)+"]님이 다른 방으로 입장하였습니다.\n");
 					endGame("상대가 나갔습니다.");
 				}
-				else if(msg.startsWith("[DISCONNECT]")){     // 손님 접속 종료
+				else if(msg.startsWith("[DISCONNECT]")){     // 유저 접속 종료
 					pList.remove(msg.substring(12));
 					playersInfo();
 					msgView.append("["+msg.substring(12)+"]님이 접속을 끊었습니다.\n");
