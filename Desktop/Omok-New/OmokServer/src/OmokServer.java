@@ -89,13 +89,19 @@ public class OmokServer implements Runnable{
 						}
 					}
 					// "[STONE]" 메시지는 상대편에게 전송한다.
-					else if(roomNumber>=1 && msg.startsWith("[STONE]"))
+					else if(roomNumber>=1 && msg.startsWith("[STONE]")) {
 						//Man.sendToOthers(this, msg);
 						Man.sendToOthers(this, msg);
+					}
+					// "[OBSER]" 관전자 전용 돌두기 
+					else if(roomNumber>=1 && msg.startsWith("[OBSER]")) {
+						Man.sendToOthers(this, msg);						
+					}
 	
 					// 대화 메시지를 방에 전송한다.
-					else if(msg.startsWith("[MSG]"))
+					else if(msg.startsWith("[MSG]")) {
 						Man.sendToRoom(roomNumber, "["+userName+"]: "+msg.substring(5));
+					}
 					// "[START]" 메시지이면
 					else if(msg.startsWith("[START]")){
 						ready=true;   // 게임을 시작할 준비가 되었다.
@@ -113,6 +119,21 @@ public class OmokServer implements Runnable{
 							}
 						}
 					}
+					
+					
+					 else if(msg.startsWith("[BACKREQUEST]")) {
+		                  Man.sendToOthers(this, "[BACKREQUEST1]");
+		               }
+		               else if(msg.startsWith("[YES]")) {
+		                  writer.println("[BACKREQUESTYES]");
+		                  Man.sendToOthers(this, "[YES]");
+		               }
+		               else if(msg.startsWith("[NO]")) {
+		                  //writer.println("[BACKREQUESTNO]");
+		                  Man.sendToOthers(this, "[NO]");
+		               }
+					
+					
 					// 사용자가 게임을 중지하는 메시지를 보내면
 					else if(msg.startsWith("[STOPGAME]"))
 						ready=false;

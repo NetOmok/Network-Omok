@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-//import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Label;
 import java.awt.Panel;
@@ -26,21 +25,20 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.StringTokenizer;
-
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import java.awt.Font;
 import javax.swing.JButton;
-
+import java.util.ArrayList;
 
 class OmokBoard extends Canvas{
   	
-	// 바둑돌의 디자인을 선택할 수 있도록 한다.
-	// 기본 설정은 black1과 white1 이미지이다.
 	String myblack = OmokClient.myblack;
 	String mywhite = OmokClient.mywhite;
+	
+	public int auth; // 관전자, 플레이어 구분
 	
 	// true이면 사용자가 돌을 놓을 수 있는 상태를 의미하고,
 	// false이면 사용자가 돌을 놓을 수 없는 상태를 의미한다.
@@ -52,12 +50,16 @@ class OmokBoard extends Canvas{
 	
 	// 오목판을 구현하는 클래스
 	public static final int BLACK = 1,WHITE = -1; // 흑과 백을 나타내는 상수
-	private int[][]map; // 오목판 배열
+	public int[][]map; // 오목판 배열
+		
+	
 	private int size; // size는 격자의 가로 또는 세로 개수, 15로 정한다.
 	private int cell; // 격자의 크기(pixel)
 	private String info="[ 게임이 정지된 상태입니다. ]"; // 게임의 진행 상황을 나타내는 문자열
 	private int color=BLACK; // 사용자의 돌 색깔
 
+	private ArrayList<Point> pointHistory = new ArrayList<Point>(); //오목돌의 좌표를 담아두는 Point ArrayList
+	
 	OmokBoard(int s, int c) { // 오목판의 생성자(s=15, c=30)
 		this.size = s; this.cell = c;
 		map = new int[size+2][]; // 맵의 크기를 정한다.
@@ -76,10 +78,19 @@ class OmokBoard extends Canvas{
 				// 돌이 놓일 수 있는 좌표가 아니면 빠져 나온다.
 				if(x==0 || y==0 || x==size+1 || y==size+1)return;
 				// 해당 좌표에 다른 돌이 놓여져 있으면 빠져 나온다.
-				if(map[x][y]==BLACK || map[x][y]==WHITE)return;
+				if(map[x][y]==BLACK || map[x][y]==WHITE)return;   // 여기에 조건 하나 추가해서 33?? 
 				// 상대편에게 놓은 돌의 좌표를 전송한다.
-				writer.println("[STONE]" + x + " "+y);
+				writer.println("[STONE]" + x + " "+y); /// 체크포인트
+
+				///////////진짜///////////////
+				OmokClient.backButton.setEnabled(true);
+				
+				writer.println("[OBSER]" + color + x + " "+y);   // color값 서버 보내서 그걸 서버가 관전자에게 보내면 그 값을 식별해서 흑돌둘지 백돌둘지 표시
 				map[x][y]=color;
+
+				//////////체크/////////
+				pointHistory.add(new Point(x, y)); //ArrayList pointHistory에 그리려고 하는 좌표를 담아둔다.
+				
 				repaint(); // 오목판을 그린다.
 				// 이겼는지 검사한다.
 				if(check(new Point(x, y), color)){
@@ -101,13 +112,19 @@ class OmokBoard extends Canvas{
 	
 	public void startGame(String col){     // 게임을 시작한다.
 		running=true;
-		if(col.equals("BLACK")){              // 흑이 선택되었을 때
-			enable=true; color=BLACK;
-			OmokClient.msgView.append("선공입니다.\n");
-		}   
-		else{                                // 백이 선택되었을 때
-			enable=false; color=WHITE;
-			OmokClient.msgView.append("기다리세요.\n");
+		if(auth==0) { //플레이어
+			if(col.equals("BLACK")){              // 흑이 선택되었을 때
+				enable=true; color=BLACK;
+				OmokClient.msgView.append("선공입니다.\n");
+			}   
+			else{                                // 백이 선택되었을 때
+				enable=false; color=WHITE;
+				OmokClient.msgView.append("기다리세요.\n");
+			}
+		} else { //관전자
+			enable = false;
+			color = BLACK; // 관전자는 흑돌로 취급
+			OmokClient.msgView.append("게임이 시작됐습니다.\n");
 		}
 	}
 
@@ -121,8 +138,19 @@ class OmokBoard extends Canvas{
 	public void putOpponent(int x, int y){       // 상대편의 돌을 놓는다.
 		map[x][y]=-color;
 		OmokClient.msgView.append("당신 차례입니다\n");
+		pointHistory.add(new Point(x, y));
 		//OmokClient.msgView.append("상대가 두었습니다.\n");
 		repaint();
+	}
+	public void putOpponent_observer_white(int x, int y) {/// 관전자보드 백돌
+		OmokClient.msgView.append("백돌이 놓였습니다\n");
+		map[x][y]=-color; 
+		repaint();		
+	}
+	public void putOpponent_observer_black(int x, int y) {/// 관전자보드 흑돌
+		OmokClient.msgView.append("흑돌이 놓였습니다\n");
+		map[x][y]=color; 
+		repaint();		
 	}
 
 	public void setEnable(boolean enable){
@@ -230,6 +258,16 @@ class OmokBoard extends Canvas{
 		for(; map[p.x+(i+1)*dx][p.y+(i+1)*dy]==col ;i++);
 		return i;
 	}
+	
+	////////체크//////////////
+	public void backRequest(){
+		Point lastLocation = pointHistory.remove(pointHistory.size() - 1);
+		map[(int)lastLocation.getX()][(int)lastLocation.getY()] = 0;
+		//checkOrder[(int)lastLocation.getX()][(int)lastLocation.getY()] = 0;
+		repaint();
+		enable = true;
+	}
+	
 }  // OmokBoard 정의 끝
 
 // 이것이 진짜 클래스이고 OmokBoard를 이용하는 주체가 된다.
@@ -266,13 +304,21 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 	Panel p1=new Panel();
 	Panel p2=new Panel();
 	
-//	JFrame f1 = new JFrame("Create Room");
+	//////////////
+	JFrame f1 = new JFrame("Back Request"); //client 1이 무르기 요청을 하면 client 2는 무르기 승낙 또는 거절 표시를 할 frame을 받는다.
 	
 
 	JLabel ready = new JLabel("");
 	JLabel quit = new JLabel("");
 	JLabel readyback = new JLabel("");
 	JLabel battleground = new JLabel("");
+	JLabel backInfoView = new JLabel("상대방의 무르기 요청이 들어왔습니다.");
+	
+	//////체크///////
+	JLabel yesButton = new JLabel("");
+	JLabel noButton	= new JLabel("");
+	static JLabel backButton = new JLabel("");
+	
 	
 	public OmokClient(String title){ // 생성자
 		super(title);
@@ -316,7 +362,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		makeRoom.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
-				makeRoom.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_make.jpg")));
+				makeRoom.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_make_hover.jpg")));
 			}
 			public void mouseExited(MouseEvent arg0) {
 				makeRoom.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_make.jpg")));
@@ -344,6 +390,15 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					p2.setBounds(500, 320, 350, 300);
 					p1.hide();
 					infoView.show();
+					if(board.auth == 1) { // 관전자 무르기 버튼 비활성화
+						backButton.hide();
+					}
+					else { // 플레이어 무르기 버튼 활성화
+						backButton.show();					
+					}
+//					backButton.show();
+					backButton.setEnabled(false);
+					
 				}catch(Exception ie){
 					
 				}
@@ -378,12 +433,85 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				p1.show();
 				infoView.hide();
 				exitButton.hide();				
+				backButton.hide();
+				
 			}
 		});
 		exitButton.setIcon(new ImageIcon(Main.class.getResource("hs_exit.jpg")));
 		exitButton.hide();
 		
 
+		////////////체크/////////////
+		backButton.setBounds(669, 70, 152, 51);
+		getContentPane().add(backButton);
+		backButton.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+			backButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_back_hover.jpg")));
+			}
+			public void mouseExited(MouseEvent arg0) {
+			backButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_back.jpg")));
+			}
+			public void mouseClicked(MouseEvent arg0){
+			try {
+				writer.println("[BACKREQUEST]");
+//				if(board.auth == 1) { // 관전자
+//					infoView.setText("무르기가 진행중입니다.\n");										
+//				}
+//				else { // 플레이어
+				infoView.setText("상대에게 무르기 요청을 합니다....\n");					
+//				}
+			}catch(Exception e) {}
+			}
+		});
+		backButton.setIcon(new ImageIcon(Main.class.getResource("hs_back.jpg")));
+		backButton.hide();
+
+		noButton.setBounds(700, 350, 60, 30);
+		//getContentPane().add(noButton);
+		noButton.addMouseListener(new MouseAdapter(){
+//		@Override
+//		public void mouseEntered(MouseEvent arg0) {
+//		noButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_ready_hover.jpg")));
+//		}
+//		public void mouseExited(MouseEvent arg0) {
+//		noButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_ready.jpg")));
+//		}
+		public void mouseClicked(MouseEvent arg0){
+		try {
+		writer.println("[NO]");
+		infoView.setText("상대방의 무르기를 거절했습니다.");
+		f1.setVisible(false);
+		}catch(Exception e) {}
+		}
+		});
+//		noButton.setIcon(new ImageIcon(Main.class.getResource("hs_ready.jpg")));
+		//noButton.hide();
+
+		yesButton.setBounds(650, 350, 60, 30);
+		//getContentPane().add(yesButton);
+		yesButton.addMouseListener(new MouseAdapter(){
+//		@Override
+//		public void mouseEntered(MouseEvent arg0) {
+//		yesButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_back_hover.jpg")));
+//		}
+//		public void mouseExited(MouseEvent arg0) {
+//		yesButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_back.jpg")));
+//		}
+		public void mouseClicked(MouseEvent arg0){
+		try {
+			writer.println("[YES]");
+			infoView.setText("상대방의 무르기를 승낙했습니다.");
+			f1.setVisible(false);
+			board.setEnable(false);
+			backButton.setEnabled(false);
+		}catch(Exception e) {}
+		}
+		});
+//		yesButton.setIcon(new ImageIcon(Main.class.getResource("hs_ready.jpg")));
+		//yesButton.hide();
+
+		
 		ready.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
@@ -405,7 +533,6 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		getContentPane().add(ready);
 		ready.hide();
 		
-	
 		quit.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
@@ -512,7 +639,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		playersInfo();
 	}
 
-	int auth; // 플레이와 관전자 구별 변수
+//	int auth; // 플레이와 관전자 구별 변수
 
 	public void run(){
 		String msg;                             // 서버로부터의 메시지
@@ -522,22 +649,48 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				 * 이건 돌의 좌표와 관련해서 승부 판정을 위해 존재하는 
 				 */
 				if(msg.startsWith("[STONE]")){     // 상대편이 놓은 돌의 좌표
-					if(auth == 1) {
+					if(board.auth == 1) { // 관전자
+				
+						// 관전자는 [OBSER] 프로토콜을 이용해 돌을 표시
+						
 //						String temp=msg.substring(7);
 //						int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
 //						int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
-//						board.putOpponent(x, y);
-//						board.setEnable(false);        // 사용자가 돌을 놓을 수 있도록 한다.
-						repaint();
+//						board.setEnable(false);        // 사용자가 돌을 놓을 수 없도록 한다.
+//						repaint();
 					}
-					else {
+					else { // 플레이어
 					String temp=msg.substring(7);
 					int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
 					int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
 					board.putOpponent(x, y);     // 상대편의 돌을 그린다.
-					board.setEnable(true);        // 사용자가 돌을 놓을 수 있도록 한다.
+					board.setEnable(true);        // 사용자가  	돌을 놓을 수 있도록 한다.
+					backButton.setEnabled(false);
 					}
 				}
+				if(msg.startsWith("[OBSER]")) {
+					if(board.auth == 1) { // 관전자						
+						if(!msg.substring(7,8).equals("-")) { // 흑돌
+							String temp = msg.substring(8);
+							String col = msg.substring(7,8);
+							int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
+							int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));							
+							board.putOpponent_observer_black(x,y);
+						}else { // 백돌
+							String temp = msg.substring(9);
+							String col = msg.substring(7,9);
+							int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
+							int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
+							board.putOpponent_observer_white(x,y);							
+							
+						}
+						board.setEnable(false);        // 사용자가 돌을 놓을 수 없도록 한다.					
+					}
+					else {// 플레이어
+						// 플레이어는 [STONE] 프로토콜을 이용해 돌을 표시
+					}
+				}
+				
 				/*여기는 방에 입장하는 것과 나가는 것에 관련한 것
 				 * 
 				 */
@@ -548,7 +701,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 						ready.show();
 						quit.show();
 						infoView.setText(msg.substring(6)+"번 방에 입장하셨습니다.");
-						auth = 0;
+						board.auth = 0; // 플레이어보드
 					}
 					else infoView.setText("대기실에 입장하셨습니다.");
 					roomNumber=Integer.parseInt(msg.substring(6));     // 방 번호 지정
@@ -564,9 +717,9 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					infoView.setText(msg.substring(6)+"방의 관전자입니다.\n");
 
 					exitButton.setEnabled(true);
-					auth = 1;
-					
-					
+					board.auth = 1; // 관전자보드
+					backButton.setVisible(false);
+			
 				}
 				else if(msg.startsWith("[PLAYERS]")){      // 방에 있는 사용자 명단
 					nameList(msg.substring(9));
@@ -593,21 +746,69 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				 * 
 				 */
 				else if(msg.startsWith("[COLOR]")){          // 돌의 색을 부여받는다.
-					String color=msg.substring(7);
+					String color;
+					if(board.auth == 1) { // 관전자는 흑돌
+						color = "BLACK";
+					}else {
+						color = msg.substring(7);
+					}
+					
 					board.startGame(color);                      // 게임을 시작한다.
 					if(color.equals("BLACK"))
 						infoView.setText("흑돌을 잡았습니다.");
 					else
 						infoView.setText("백돌을 잡았습니다.");              // 기권 버튼 활성화
+
 				}
+				else if(msg.startsWith("[YES]")) {
+					infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");
+					board.backRequest();
+//					board.setEnable(true);
+					backButton.setEnabled(false);
+					}
+					else if(msg.startsWith("[NO]")) {
+
+					infoView.setText("상대방이 무르기 요청을 거절했습니다.\n");
+					backButton.setEnabled(false);
+					}
+					else if(msg.startsWith("[BACKREQUESTYES]")) {
+					board.backRequest();
+					}
+					/*else if(msg.startsWith("[BACKREQUESTNO]")) {
+
+					}*/
 				else if(msg.startsWith("[DROPGAME]"))      // 상대가 기권하면
 					endGame("상대가 기권하였습니다.");
 				else if(msg.startsWith("[WIN]"))              // 이겼으면
 					endGame("이겼습니다.");
 				else if(msg.startsWith("[LOSE]"))            // 졌으면
 					endGame("졌습니다.");
+				
+				////////////체크////////////
+				else if(msg.startsWith("[BACKREQUEST1]")) {
+					if(board.auth == 1) {
+						infoView.setText("무르기가 진행중입니다.\n"); 	
+					}
+					else {
+						f1.add(yesButton);
+						f1.add(noButton);
+						f1.add(backInfoView);
+						f1.setBounds(550, 300, 250, 200);
+						noButton.setBounds(155, 100, 60, 30);
+						yesButton.setBounds(50, 100, 60, 30);
+						backInfoView.setBounds(10, 30, 240, 30);
+						backInfoView.setText("상대방의 무르기 요청이 들어왔습니다.");
+						yesButton.setText("YES");
+						noButton.setText("NO");
+						
+						f1.setLayout(null);
+						f1.setVisible(true);
+					}
+				}
 				// 약속된 메시지가 아니면 메시지 영역에 보여준다.
-				else msgView.append(msg+"\n");
+				else {
+					msgView.append(msg+"\n");  // [STONE] 좌표 출력되는거 같음
+				}
 			}
 		}catch(IOException ie){
 			msgView.append(ie+"\n");
@@ -619,6 +820,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		infoView.setText(msg);
 		try{ Thread.sleep(2000); }catch(Exception e){}    // 2초간 대기
 		if(board.isRunning())board.stopGame();
+		backButton.setEnabled(false);
 	}
 	
 	private void playersInfo(){                 // 방에 있는 접속자의 수를 보여준다.
