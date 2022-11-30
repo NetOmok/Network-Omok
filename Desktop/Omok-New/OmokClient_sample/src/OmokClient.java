@@ -78,8 +78,9 @@ class OmokBoard extends Canvas{
 				// 돌이 놓일 수 있는 좌표가 아니면 빠져 나온다.
 				if(x==0 || y==0 || x==size+1 || y==size+1)return;
 				// 해당 좌표에 다른 돌이 놓여져 있으면 빠져 나온다.
-				if(map[x][y]==BLACK || map[x][y]==WHITE)return;   // 여기에 조건 하나 추가해서 33?? 
+				if(map[x][y]==BLACK || map[x][y]==WHITE)return;  
 				// 상대편에게 놓은 돌의 좌표를 전송한다.
+				// 여기에 조건 하나 추가해서 33?? 
 				writer.println("[STONE]" + x + " "+y); /// 체크포인트
 
 				///////////진짜///////////////
@@ -392,6 +393,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					infoView.show();
 					if(board.auth == 1) { // 관전자 무르기 버튼 비활성화
 						backButton.hide();
+						infoView.setText("게임을 관전중입니다.");
 					}
 					else { // 플레이어 무르기 버튼 활성화
 						backButton.show();					
@@ -703,7 +705,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 						infoView.setText(msg.substring(6)+"번 방에 입장하셨습니다.");
 						board.auth = 0; // 플레이어보드
 					}
-					else infoView.setText("대기실에 입장하셨습니다.");
+					else { infoView.setText("대기실에 입장하셨습니다."); }
 					roomNumber=Integer.parseInt(msg.substring(6));     // 방 번호 지정
 					if(board.isRunning()){                    // 게임이 진행중인 상태이면
 						board.stopGame();                    // 게임을 중지시킨다.
@@ -754,21 +756,30 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					}
 					
 					board.startGame(color);                      // 게임을 시작한다.
-					if(color.equals("BLACK"))
-						infoView.setText("흑돌을 잡았습니다.");
-					else
+					if(color.equals("BLACK")) {
+						if(board.auth != 1) { // 플레이어만 표시
+							infoView.setText("흑돌을 잡았습니다.");
+						}
+//						infoView.setText("흑돌을 잡았습니다.");
+					}
+					else {
 						infoView.setText("백돌을 잡았습니다.");              // 기권 버튼 활성화
-
+					}
 				}
 				else if(msg.startsWith("[YES]")) {
-					infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");
+					if(board.auth != 1) { // 플레이어만 표시
+						infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");						
+					}
+//					infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");
 					board.backRequest();
 //					board.setEnable(true);
 					backButton.setEnabled(false);
 					}
 					else if(msg.startsWith("[NO]")) {
 
-					infoView.setText("상대방이 무르기 요청을 거절했습니다.\n");
+					if(board.auth != 1) {
+						infoView.setText("상대방이 무르기 요청을 거절했습니다.\n");						
+					}
 					backButton.setEnabled(false);
 					}
 					else if(msg.startsWith("[BACKREQUESTYES]")) {
@@ -807,7 +818,15 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				}
 				// 약속된 메시지가 아니면 메시지 영역에 보여준다.
 				else {
-					msgView.append(msg+"\n");  // [STONE] 좌표 출력되는거 같음
+					if(msg.startsWith("[STONE]")) { // 돌 좌표 메시지
+						msgView.append(msg+" 위치에 돌이 놓였습니다.\n");						
+					}
+					else {
+						msgView.append(msg+"\n");  // 채팅 메시지		
+					}
+					
+					
+					
 				}
 			}
 		}catch(IOException ie){
