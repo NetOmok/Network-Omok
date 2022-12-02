@@ -133,10 +133,10 @@ public class OmokServer implements Runnable{
 		               }
 		               else if(msg.startsWith("[YES]")) {
 		                  writer.println("[BACKREQUESTYES]");
+		                  Man.sendToOthers(this, "[BACKREQUESTYESOBSER]"); // 관전자한테
 		                  Man.sendToOthers(this, "[YES]");
 		               }
 		               else if(msg.startsWith("[NO]")) {
-		                  //writer.println("[BACKREQUESTNO]");
 		                  Man.sendToOthers(this, "[NO]");
 		               }
 					

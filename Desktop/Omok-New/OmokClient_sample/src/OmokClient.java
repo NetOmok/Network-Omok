@@ -89,7 +89,7 @@ class OmokBoard extends Canvas{
 				writer.println("[OBSER]" + color + x + " "+y);   // color값 서버 보내서 그걸 서버가 관전자에게 보내면 그 값을 식별해서 흑돌둘지 백돌둘지 표시
 				map[x][y]=color;
 
-				//////////체크/////////
+				////////// 클릭 이벤트로 add되기 때문에 관전자 pointHistory엔 데이터 x /////////
 				pointHistory.add(new Point(x, y)); //ArrayList pointHistory에 그리려고 하는 좌표를 담아둔다.
 				
 				repaint(); // 오목판을 그린다.
@@ -145,12 +145,14 @@ class OmokBoard extends Canvas{
 	}
 	public void putOpponent_observer_white(int x, int y) {/// 관전자보드 백돌
 		OmokClient.msgView.append("백돌이 놓였습니다\n");
-		map[x][y]=-color; 
+		map[x][y]=-color;
+		pointHistory.add(new Point(x, y));		
 		repaint();		
 	}
 	public void putOpponent_observer_black(int x, int y) {/// 관전자보드 흑돌
 		OmokClient.msgView.append("흑돌이 놓였습니다\n");
-		map[x][y]=color; 
+		map[x][y]=color;
+		pointHistory.add(new Point(x, y));
 		repaint();		
 	}
 
@@ -264,10 +266,15 @@ class OmokBoard extends Canvas{
 	public void backRequest(){
 		Point lastLocation = pointHistory.remove(pointHistory.size() - 1);
 		map[(int)lastLocation.getX()][(int)lastLocation.getY()] = 0;
-		//checkOrder[(int)lastLocation.getX()][(int)lastLocation.getY()] = 0;
 		repaint();
 		enable = true;
 	}
+	public void backRequestObser(){
+		Point lastLocation = pointHistory.remove(pointHistory.size() - 1);
+		map[(int)lastLocation.getX()][(int)lastLocation.getY()] = 0;
+		repaint();
+	}
+	
 	
 }  // OmokBoard 정의 끝
 
@@ -691,10 +698,6 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				/*여기는 방에 입장하는 것과 나가는 것에 관련한 것
 				 * 
 				 */
-				
-				// 얘를 makeroom 클릭리스너에 넣기?
-				// while문 안에서 돌아야해서 안된다???
-				// 클릭리스너 안에서 while문 돌다가 프로토콜 들어오면 break; 하는 방식?
 				else if(msg.startsWith("[ROOM]")){    // 방에 입장
 					if(!msg.equals("[ROOM]0")){          // 대기실이 아닌 방이면
 						EnterRoomShow();
@@ -772,28 +775,22 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 						infoView.setText("백돌을 잡았습니다.");              // 기권 버튼 활성화
 					}
 				}
-				else if(msg.startsWith("[YES]")) {
-					if(board.auth != 1) { // 플레이어만 표시
-						infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");						
-					}
-//					infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");
+				// 무르기 보낸사람
+				else if(msg.startsWith("[YES]") && board.auth != 1) {
+					infoView.setText("상대방이 무르기 요청을 승낙했습니다.\n");
 					board.backRequest();
-//					board.setEnable(true);
 					backButton.setEnabled(false);
-					}
-					else if(msg.startsWith("[NO]")) {
-
-					if(board.auth != 1) {
-						infoView.setText("상대방이 무르기 요청을 거절했습니다.\n");						
-					}
+				}
+				else if(msg.startsWith("[NO]") && board.auth != 1) {
+					infoView.setText("상대방이 무르기 요청을 거절했습니다.\n");				
 					backButton.setEnabled(false);
-					}
-					else if(msg.startsWith("[BACKREQUESTYES]")) {
+				}
+				else if(msg.startsWith("[BACKREQUESTYES]") && board.auth != 1) { // 무르기 받은사람
 					board.backRequest();
-					}
-					/*else if(msg.startsWith("[BACKREQUESTNO]")) {
-
-					}*/
+				}
+				else if(msg.startsWith("[BACKREQUESTYESOBSER]") && board.auth == 1) {
+					board.backRequestObser();
+				}
 				else if(msg.startsWith("[DROPGAME]"))      // 상대가 기권하면
 					endGame("상대가 기권하였습니다.");
 				else if(msg.startsWith("[WIN]"))              // 이겼으면
