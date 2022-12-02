@@ -67,25 +67,32 @@ public class OmokServer implements Runnable{
 					// msg가 "[ROOM]"으로 시작되면 방 번호를 정한다.
 					else if(msg.startsWith("[ROOM]")){
 						int roomNum=Integer.parseInt(msg.substring(6));
-						if( !Man.isFull(roomNum)){             // 방이 찬 상태가 아니면
-							// 현재 방의 다른 사용에게 사용자의 퇴장을 알린다.
-							if(roomNumber!=-1)
-								Man.sendToOthers(this, "[EXIT]"+userName);
-							// 사용자의 새 방 번호를 지정한다.
-							roomNumber=roomNum;
-							// 사용자에게 메시지를 그대로 전송하여 입장할 수 있음을 알린다.
-							writer.println(msg);
-							// 사용자에게 새 방에 있는 사용자 이름 리스트를 전송한다.
-							writer.println(Man.getNamesInRoom(roomNumber));
-							// 새 방에 있는 다른 사용자에게 사용자의 입장을 알린다.
-							Man.sendToOthers(this, "[ENTER]"+userName);
+						
+						// 게임이 시작된 상황이면 못들어오게
+						if(Man.isReady(roomNum)) {
+							// 입장불가 프로토콜 전송
+							writer.println("[RUNNING]");
 						}
-						else {							
-							roomNumber=roomNum;
-							writer.println("[FULL]"+roomNumber);
-							writer.println(Man.getNamesInRoom(roomNumber));
-							Man.sendToOthers(this, "[ENTER]"+userName);
-							
+						else { // 정상입장						
+							if( !Man.isFull(roomNum)){             // 방이 찬 상태가 아니면
+								// 현재 방의 다른 사용에게 사용자의 퇴장을 알린다.
+								if(roomNumber!=-1)
+									Man.sendToOthers(this, "[EXIT]"+userName);
+								// 사용자의 새 방 번호를 지정한다.
+								roomNumber=roomNum;
+								// 사용자에게 메시지를 그대로 전송하여 입장할 수 있음을 알린다.
+								writer.println(msg);
+								// 사용자에게 새 방에 있는 사용자 이름 리스트를 전송한다.
+								writer.println(Man.getNamesInRoom(roomNumber));
+								// 새 방에 있는 다른 사용자에게 사용자의 입장을 알린다.
+								Man.sendToOthers(this, "[ENTER]"+userName);
+							}
+							else {							
+								roomNumber=roomNum;
+								writer.println("[FULL]"+roomNumber);
+								writer.println(Man.getNamesInRoom(roomNumber));
+								Man.sendToOthers(this, "[ENTER]"+userName);
+							}
 						}
 					}
 					// "[STONE]" 메시지는 상대편에게 전송한다.

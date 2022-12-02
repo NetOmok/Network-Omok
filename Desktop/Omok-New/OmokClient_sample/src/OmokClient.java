@@ -360,6 +360,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		
 		makeRoom.setBounds(700, 205, 130, 44);
 		getContentPane().add(makeRoom);
+		
+		
 		makeRoom.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
@@ -372,35 +374,12 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				try{
 					msgView.setText("");
 					if(Integer.parseInt(roomBox.getText())<1){
-						infoView.setText("방번호가 잘못되었습니다. 1이상");
-						//pInfo.setText("방번호가 잘못되었습니다. 1이상");
-						
+						pInfo.setText("방번호가 잘못되었습니다. 1이상");						
 						return;
 					}
 					writer.println("[ROOM]"+Integer.parseInt(roomBox.getText()));
-					board.show();
-					exitButton.show();
-					makeRoom.hide();					
-					roomBox.hide();
-//					ready.show();
-//					quit.show();
-					nameBox.hide();
-					readyback.hide();
-					battleground.show();
-					pInfo.hide();
-					p2.setBounds(500, 320, 350, 300);
-					p1.hide();
-					infoView.show();
-					if(board.auth == 1) { // 관전자 무르기 버튼 비활성화
-						backButton.hide();
-						infoView.setText("게임을 관전중입니다.");
-					}
-					else { // 플레이어 무르기 버튼 활성화
-						backButton.show();					
-					}
-//					backButton.show();
-					backButton.setEnabled(false);
-					
+//					EnterRoomShow();
+			
 				}catch(Exception ie){
 					
 				}
@@ -606,6 +585,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 			}catch(Exception ie){}
 		}
 		
+		
+		/// 삭제 체크리스트 //
 		else if(ae.getSource()==exitButton){           // 대기실로 버튼이면
 			try{
 				goToWaitRoom();
@@ -640,8 +621,29 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 		exitButton.setEnabled(false);
 		playersInfo();
 	}
-
-//	int auth; // 플레이와 관전자 구별 변수
+	
+	public void EnterRoomShow() {
+		board.show();
+		exitButton.show();
+		makeRoom.hide();					
+		roomBox.hide();
+		nameBox.hide();
+		readyback.hide();
+		battleground.show();
+		pInfo.hide();
+		p2.setBounds(500, 320, 350, 300);
+		p1.hide();
+		infoView.show();
+		if(board.auth == 1) { // 관전자 무르기 버튼 비활성화
+			backButton.hide();
+			infoView.setText("게임을 관전중입니다.");
+		}
+		else { // 플레이어 무르기 버튼 활성화
+			backButton.show();					
+		}
+		backButton.setEnabled(false);
+	}
+	
 
 	public void run(){
 		String msg;                             // 서버로부터의 메시지
@@ -651,15 +653,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				 * 이건 돌의 좌표와 관련해서 승부 판정을 위해 존재하는 
 				 */
 				if(msg.startsWith("[STONE]")){     // 상대편이 놓은 돌의 좌표
-					if(board.auth == 1) { // 관전자
-				
+					if(board.auth == 1) {
 						// 관전자는 [OBSER] 프로토콜을 이용해 돌을 표시
-						
-//						String temp=msg.substring(7);
-//						int x=Integer.parseInt(temp.substring(0,temp.indexOf(" ")));
-//						int y=Integer.parseInt(temp.substring(temp.indexOf(" ")+1));
-//						board.setEnable(false);        // 사용자가 돌을 놓을 수 없도록 한다.
-//						repaint();
 					}
 					else { // 플레이어
 					String temp=msg.substring(7);
@@ -696,8 +691,13 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				/*여기는 방에 입장하는 것과 나가는 것에 관련한 것
 				 * 
 				 */
+				
+				// 얘를 makeroom 클릭리스너에 넣기?
+				// while문 안에서 돌아야해서 안된다???
+				// 클릭리스너 안에서 while문 돌다가 프로토콜 들어오면 break; 하는 방식?
 				else if(msg.startsWith("[ROOM]")){    // 방에 입장
 					if(!msg.equals("[ROOM]0")){          // 대기실이 아닌 방이면
+						EnterRoomShow();
 						makeRoom.setEnabled(false);
 						exitButton.setEnabled(true);
 						ready.show();
@@ -714,7 +714,8 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 				else if(msg.startsWith("[FULL]")){       // 방이 찬 상태이면
 					ready.hide();
 					quit.hide();
-
+					
+					EnterRoomShow();
 					roomNumber=Integer.parseInt(msg.substring(6));     // 방 번호 지정
 					infoView.setText(msg.substring(6)+"방의 관전자입니다.\n");
 
@@ -722,6 +723,11 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					board.auth = 1; // 관전자보드
 					backButton.setVisible(false);
 			
+				}
+				else if(msg.startsWith("[RUNNING]")) {					
+					
+					pInfo.setText("해당 방 게임이 진행중입니다.");
+					roomBox.setText("0");
 				}
 				else if(msg.startsWith("[PLAYERS]")){      // 방에 있는 사용자 명단
 					nameList(msg.substring(9));
