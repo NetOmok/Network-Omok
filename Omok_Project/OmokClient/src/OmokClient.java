@@ -871,7 +871,7 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 	public void connect(){ // 연결
 		try{
 			msgView.append("서버에 연결을 요청합니다.\n");
-			socket=new Socket("localhost", 9735);
+			socket=new Socket("localhost", 8000);
 			msgView.append("연결에 성공하였습니다.\n");
 			msgView.append("이름을 입력하고 대기실로 입장하세요.\n");
 			reader=new BufferedReader(

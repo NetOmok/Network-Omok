@@ -12,7 +12,7 @@ public class OmokServer implements Runnable{
 	// 서버를 실행하는 함수
 	void startServer(){
 		try{
-			server=new ServerSocket(9735);
+			server=new ServerSocket(8000);
 			Main.textArea.append("서버를 동작시킵니다.\n");
 			while(true){
 				// 클라이언트와 연결된 스레드 획득
