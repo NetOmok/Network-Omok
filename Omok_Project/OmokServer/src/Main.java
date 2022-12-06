@@ -56,8 +56,8 @@ public class Main extends JFrame implements Runnable{
 		scrollPane.setVisible(false);
 		contentPane.add(scrollPane);
 		
-		JLabel operateAction = new JLabel("");
-		operateAction.setVisible(false);
+		JLabel cancelOperate = new JLabel("");
+		cancelOperate.setVisible(false);
 		
 		// 서버 동작 버튼
 		JLabel operate = new JLabel("");
@@ -73,7 +73,7 @@ public class Main extends JFrame implements Runnable{
 				// 서버가 동작한다.
 			    t2.start();
 			    scrollPane.setVisible(true);
-			    operateAction.setVisible(true);
+			    cancelOperate.setVisible(true);
 			}
 		});
 		operate.setIcon(new ImageIcon(Main.class.getResource("hs_sang_oper.jpg")));
@@ -81,21 +81,21 @@ public class Main extends JFrame implements Runnable{
 		contentPane.add(operate);
 		
 		// 동작 취소 버튼
-		operateAction.addMouseListener(new MouseAdapter(){
+		cancelOperate.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mouseEntered(MouseEvent arg0) {
-				operateAction.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_stop-hover.jpg")));
+				cancelOperate.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_stop-hover.jpg")));
 			}
 			public void mouseExited(MouseEvent arg0) {
-				operateAction.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_stop.jpg")));
+				cancelOperate.setIcon(new javax.swing.ImageIcon(getClass().getResource("hs_stop.jpg")));
 			}
 			public void mouseClicked(MouseEvent arg0){
 				System.exit(0);
 			}
 		});
-		operateAction.setIcon(new ImageIcon(Main.class.getResource("hs_stop.jpg")));
-		operateAction.setBounds(239, 212, 78, 60);
-		contentPane.add(operateAction);
+		cancelOperate.setIcon(new ImageIcon(Main.class.getResource("hs_stop.jpg")));
+		cancelOperate.setBounds(239, 212, 78, 60);
+		contentPane.add(cancelOperate);
 		
 		// 프로그램 종료 버튼
 		JLabel close = new JLabel("");

@@ -105,6 +105,5 @@ public class Main extends JFrame {
 		join.setVisible(true);
 		nametext.setVisible(true);
 		background_d.setVisible(true);
-		//////////////////////
 	}
 }
