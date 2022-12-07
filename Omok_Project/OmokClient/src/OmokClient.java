@@ -727,10 +727,21 @@ public class OmokClient extends JFrame implements Runnable, ActionListener {
 					endGame("상대가 기권하였습니다.");
 				}
 				else if(msg.startsWith("[WIN]")) {            // 이겼으면
-					endGame("이겼습니다.");
+					if(board.auth != 1) { // 플레이어
+						endGame("이겼습니다.");				
+					}
+					else { // 관전자
+						endGame("게임이 종료되었습니다.");
+					}
 				}
 				else if(msg.startsWith("[LOSE]")) {           // 졌으면
-					endGame("졌습니다.");
+
+					if(board.auth != 1) { // 플레이어
+						endGame("졌습니다.");				
+					}
+					else { // 관전자
+						endGame("게임이 종료되었습니다.");
+					}
 				}
 				else if(msg.startsWith("[BACKREQUEST1]")) { 
 					if(board.auth == 1) {
